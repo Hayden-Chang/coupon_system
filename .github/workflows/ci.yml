@@ -24,51 +24,7 @@ jobs:
         run: pip install -r requirements.txt
 
       - name: Compile Python sources
-        run: python -m compileall app.py chart.py database.py
+        run: python -m compileall app.py chart.py database.py tests
 
-      - name: Run Flask smoke checks
-        run: |
-          python - <<'PY'
-          import json
-
-          from app import app
-
-          client = app.test_client()
-
-          index_response = client.get("/")
-          assert index_response.status_code == 200, index_response.status_code
-
-          list_response = client.get("/api/configs")
-          assert list_response.status_code == 200, list_response.status_code
-          payload = list_response.get_json()
-          assert payload["success"] is True
-
-          config_payload = {
-              "name": "CI Smoke Config",
-              "x": 2,
-              "y": 34,
-              "m": 15,
-              "n": 20,
-              "coupons": [
-                  {"tier": 1, "p": 50, "q": 5},
-                  {"tier": 2, "p": 70, "q": 8},
-              ],
-          }
-
-          create_response = client.post(
-              "/api/configs",
-              data=json.dumps(config_payload),
-              content_type="application/json",
-          )
-          assert create_response.status_code == 201, create_response.get_data(as_text=True)
-          config_id = create_response.get_json()["data"]["id"]
-
-          detail_response = client.get(f"/api/configs/{config_id}")
-          assert detail_response.status_code == 200, detail_response.get_data(as_text=True)
-
-          chart_response = client.get(f"/api/configs/{config_id}/chart")
-          assert chart_response.status_code == 200, chart_response.get_data(as_text=True)
-          chart_payload = chart_response.get_json()["data"]
-          assert chart_payload["image_base64"]
-          assert chart_payload["summary"]["min_profit"] > 0
-          PY
+      - name: Run API tests
+        run: python -m unittest discover -s tests -p 'test_*.py'
