@@ -1,5 +1,8 @@
 # 阶梯满减优惠券管理系统
 
+![CI](https://github.com/Hayden-Chang/coupon_system/actions/workflows/ci.yml/badge.svg)
+![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)
+
 一个基于 `Flask + SQLite + Matplotlib` 的小型工具，用来管理电商商品的定价配置与阶梯满减优惠券，并通过图表分析利润、利润率、实际支付金额和优惠金额变化。
 
 ## 项目简介
@@ -39,6 +42,9 @@ coupon_system/
 ├── chart.py                 # 图表生成与指标计算
 ├── requirements.txt         # Python 依赖
 ├── design_doc.md            # 需求说明文档
+├── LICENSE                  # MIT 开源许可证
+├── tests/
+│   └── test_api.py          # API 接口测试
 ├── templates/
 │   └── index.html           # 前端单页
 └── .github/workflows/
@@ -162,7 +168,7 @@ curl -X POST http://127.0.0.1:5000/api/configs \
   }'
 ```
 
-## CI 说明
+## CI 与测试
 
 仓库已配置 GitHub Actions 工作流：`.github/workflows/ci.yml`
 
@@ -170,7 +176,13 @@ curl -X POST http://127.0.0.1:5000/api/configs \
 
 - 安装依赖
 - 编译检查 Python 文件
-- 运行 Flask 冒烟测试
+- 运行 `tests/test_api.py` 中的接口测试
+
+本地也可以手动执行测试：
+
+```bash
+python -m unittest discover -s tests -p 'test_*.py'
+```
 
 触发时机：
 
@@ -187,7 +199,7 @@ curl -X POST http://127.0.0.1:5000/api/configs \
 
 ## 后续可扩展方向
 
-- 增加正式的单元测试
+- 增加更细粒度的异常与边界测试
 - 支持导出配置和图表
 - 支持多种运费策略
 - 增加 Docker 部署文件
@@ -195,4 +207,4 @@ curl -X POST http://127.0.0.1:5000/api/configs \
 
 ## License
 
-当前仓库未单独附带许可证文件；如需开源分发，建议补充 `LICENSE`。
+本项目采用 `MIT` 许可证，详见 `LICENSE`。
