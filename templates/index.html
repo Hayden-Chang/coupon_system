@@ -1,0 +1,1404 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>阶梯满减优惠券管理系统</title>
+    <style>
+        :root {
+            --bg: #f7f3ec;
+            --surface: rgba(255, 255, 255, 0.84);
+            --surface-strong: #fffdf8;
+            --line: rgba(148, 123, 84, 0.18);
+            --text: #1d1a16;
+            --muted: #6e6256;
+            --primary: #b2552b;
+            --primary-deep: #843814;
+            --accent: #0f766e;
+            --danger: #b42318;
+            --shadow: 0 18px 55px rgba(85, 57, 35, 0.12);
+            --radius: 24px;
+            --radius-sm: 14px;
+            --z-modal: 50;
+            --z-toast: 60;
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            min-height: 100vh;
+            font-family: "Segoe UI", "PingFang SC", "Hiragino Sans GB", sans-serif;
+            color: var(--text);
+            background:
+                radial-gradient(circle at top left, rgba(255, 220, 183, 0.62), transparent 36%),
+                radial-gradient(circle at top right, rgba(184, 219, 217, 0.42), transparent 28%),
+                linear-gradient(180deg, #fbf7f2 0%, #f4eee6 100%);
+        }
+
+        button,
+        input {
+            font: inherit;
+        }
+
+        button {
+            cursor: pointer;
+            border: none;
+        }
+
+        button:disabled {
+            cursor: not-allowed;
+            opacity: 0.65;
+        }
+
+        input {
+            width: 100%;
+            min-height: 44px;
+            padding: 0.8rem 0.95rem;
+            border-radius: 14px;
+            border: 1px solid rgba(120, 88, 58, 0.16);
+            background: rgba(255, 255, 255, 0.92);
+            color: var(--text);
+            transition: border-color 0.2s ease, box-shadow 0.2s ease;
+        }
+
+        input:focus,
+        button:focus-visible {
+            outline: none;
+            border-color: rgba(178, 85, 43, 0.56);
+            box-shadow: 0 0 0 4px rgba(178, 85, 43, 0.12);
+        }
+
+        .app-shell {
+            padding: 24px;
+        }
+
+        .topbar {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 16px;
+            padding: 22px 26px;
+            border: 1px solid rgba(255, 255, 255, 0.55);
+            border-radius: 28px;
+            background: linear-gradient(135deg, rgba(255, 253, 248, 0.92), rgba(248, 240, 231, 0.82));
+            box-shadow: var(--shadow);
+            backdrop-filter: blur(16px);
+        }
+
+        .title-wrap h1 {
+            margin: 0;
+            font-size: clamp(1.5rem, 2vw, 2rem);
+            letter-spacing: 0.02em;
+        }
+
+        .title-wrap p {
+            margin: 8px 0 0;
+            color: var(--muted);
+            max-width: 720px;
+            line-height: 1.65;
+        }
+
+        .topbar-actions {
+            display: flex;
+            gap: 12px;
+        }
+
+        .layout {
+            display: grid;
+            grid-template-columns: 320px minmax(0, 1fr);
+            gap: 20px;
+            margin-top: 20px;
+            align-items: start;
+        }
+
+        .sidebar,
+        .card {
+            border-radius: var(--radius);
+            border: 1px solid rgba(255, 255, 255, 0.54);
+            background: var(--surface);
+            box-shadow: var(--shadow);
+            backdrop-filter: blur(14px);
+        }
+
+        .sidebar {
+            position: sticky;
+            top: 24px;
+            overflow: hidden;
+        }
+
+        .sidebar-header,
+        .section-head {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+            padding: 20px 22px 14px;
+        }
+
+        .sidebar-header h2,
+        .section-head h2 {
+            margin: 0;
+            font-size: 1rem;
+        }
+
+        .sidebar-body {
+            padding: 0 16px 18px;
+        }
+
+        .config-list {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            max-height: calc(100vh - 190px);
+            overflow-y: auto;
+            padding-right: 4px;
+        }
+
+        .config-item {
+            display: grid;
+            grid-template-columns: minmax(0, 1fr) auto;
+            gap: 10px;
+            align-items: center;
+            padding: 12px;
+            border-radius: 18px;
+            border: 1px solid transparent;
+            background: rgba(255, 255, 255, 0.72);
+            transition: transform 0.2s ease, border-color 0.2s ease, background 0.2s ease;
+        }
+
+        .config-item.active {
+            border-color: rgba(178, 85, 43, 0.25);
+            background: rgba(255, 244, 235, 0.96);
+            transform: translateY(-1px);
+        }
+
+        .config-main {
+            background: transparent;
+            text-align: left;
+            padding: 0;
+        }
+
+        .config-main strong {
+            display: block;
+            font-size: 0.97rem;
+        }
+
+        .config-main span {
+            display: block;
+            margin-top: 4px;
+            color: var(--muted);
+            font-size: 0.86rem;
+        }
+
+        .icon-btn,
+        .ghost-btn,
+        .primary-btn,
+        .danger-btn {
+            min-height: 44px;
+            padding: 0 16px;
+            border-radius: 14px;
+            transition: transform 0.2s ease, background 0.2s ease;
+        }
+
+        .icon-btn {
+            width: 44px;
+            min-width: 44px;
+            padding: 0;
+            background: rgba(180, 49, 49, 0.08);
+            color: var(--danger);
+        }
+
+        .ghost-btn {
+            background: rgba(255, 255, 255, 0.76);
+            color: var(--text);
+            border: 1px solid rgba(120, 88, 58, 0.12);
+        }
+
+        .primary-btn {
+            background: linear-gradient(135deg, var(--primary), var(--primary-deep));
+            color: #fff;
+            box-shadow: 0 12px 24px rgba(132, 56, 20, 0.18);
+        }
+
+        .danger-btn {
+            background: rgba(180, 49, 49, 0.12);
+            color: var(--danger);
+        }
+
+        .main {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .hero-card {
+            overflow: hidden;
+            padding: 24px;
+            position: relative;
+        }
+
+        .hero-card::after {
+            content: "";
+            position: absolute;
+            inset: auto -80px -80px auto;
+            width: 220px;
+            height: 220px;
+            background: radial-gradient(circle, rgba(15, 118, 110, 0.18), transparent 68%);
+            pointer-events: none;
+        }
+
+        .hero-grid {
+            display: grid;
+            grid-template-columns: minmax(0, 1.2fr) minmax(320px, 0.8fr);
+            gap: 20px;
+        }
+
+        .hero-copy h2 {
+            margin: 0;
+            font-size: clamp(1.45rem, 2vw, 2rem);
+            line-height: 1.2;
+        }
+
+        .hero-copy p {
+            margin: 12px 0 0;
+            color: var(--muted);
+            line-height: 1.7;
+            max-width: 65ch;
+        }
+
+        .formula-chip {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            margin-top: 16px;
+            padding: 10px 14px;
+            border-radius: 999px;
+            background: rgba(178, 85, 43, 0.1);
+            color: var(--primary-deep);
+            font-weight: 600;
+        }
+
+        .hero-stats {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 12px;
+        }
+
+        .stat-card {
+            padding: 18px;
+            border-radius: 18px;
+            background: rgba(255, 255, 255, 0.78);
+            border: 1px solid rgba(120, 88, 58, 0.12);
+        }
+
+        .stat-card span {
+            display: block;
+            color: var(--muted);
+            font-size: 0.84rem;
+        }
+
+        .stat-card strong {
+            display: block;
+            margin-top: 8px;
+            font-size: 1.15rem;
+        }
+
+        .card {
+            padding: 0 0 20px;
+            overflow: hidden;
+        }
+
+        .card-body {
+            padding: 0 22px;
+        }
+
+        .config-grid {
+            display: grid;
+            grid-template-columns: repeat(5, minmax(0, 1fr));
+            gap: 12px;
+        }
+
+        .config-field {
+            padding: 16px;
+            border-radius: 18px;
+            background: rgba(255, 255, 255, 0.72);
+            border: 1px solid rgba(120, 88, 58, 0.12);
+        }
+
+        .config-field span {
+            display: block;
+            color: var(--muted);
+            font-size: 0.83rem;
+        }
+
+        .config-field strong {
+            display: block;
+            margin-top: 8px;
+            font-size: 1.08rem;
+        }
+
+        .table-wrap {
+            overflow-x: auto;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            min-width: 720px;
+        }
+
+        th,
+        td {
+            padding: 14px 10px;
+            border-bottom: 1px solid rgba(120, 88, 58, 0.1);
+            text-align: left;
+            vertical-align: middle;
+        }
+
+        th {
+            color: var(--muted);
+            font-weight: 600;
+            font-size: 0.9rem;
+        }
+
+        .inline-input {
+            min-width: 120px;
+        }
+
+        .row-actions {
+            display: flex;
+            gap: 8px;
+        }
+
+        .row-actions button {
+            min-height: 40px;
+            padding: 0 12px;
+            border-radius: 12px;
+        }
+
+        .chart-panel {
+            min-height: 440px;
+            border-radius: 22px;
+            border: 1px dashed rgba(120, 88, 58, 0.18);
+            background:
+                linear-gradient(180deg, rgba(255, 255, 255, 0.72), rgba(250, 245, 239, 0.82));
+            display: grid;
+            place-items: center;
+            padding: 22px;
+        }
+
+        .chart-panel img {
+            width: 100%;
+            height: auto;
+            border-radius: 18px;
+            border: 1px solid rgba(120, 88, 58, 0.12);
+            background: #fff;
+        }
+
+        .chart-placeholder,
+        .empty-state {
+            text-align: center;
+            color: var(--muted);
+            max-width: 520px;
+            line-height: 1.7;
+        }
+
+        .summary-grid {
+            display: grid;
+            grid-template-columns: repeat(4, minmax(0, 1fr));
+            gap: 12px;
+            margin-top: 16px;
+        }
+
+        .summary-item {
+            padding: 14px;
+            border-radius: 16px;
+            background: rgba(255, 255, 255, 0.72);
+            border: 1px solid rgba(120, 88, 58, 0.12);
+        }
+
+        .summary-item span {
+            display: block;
+            color: var(--muted);
+            font-size: 0.82rem;
+        }
+
+        .summary-item strong {
+            display: block;
+            margin-top: 8px;
+        }
+
+        .coupon-feedback {
+            margin-top: 14px;
+            padding: 14px 16px;
+            border-radius: 16px;
+            border: 1px solid rgba(180, 49, 49, 0.18);
+            background: rgba(180, 49, 49, 0.08);
+            color: var(--danger);
+            line-height: 1.65;
+        }
+
+        .modal,
+        .confirm {
+            position: fixed;
+            inset: 0;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            padding: 24px;
+            background: rgba(29, 26, 22, 0.42);
+            z-index: var(--z-modal);
+        }
+
+        .modal.open,
+        .confirm.open {
+            display: flex;
+        }
+
+        .modal-card,
+        .confirm-card {
+            width: min(640px, 100%);
+            padding: 24px;
+            border-radius: 24px;
+            background: var(--surface-strong);
+            box-shadow: var(--shadow);
+            border: 1px solid rgba(255, 255, 255, 0.5);
+        }
+
+        .modal-head,
+        .confirm-head {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+            margin-bottom: 20px;
+        }
+
+        .modal-head h3,
+        .confirm-head h3 {
+            margin: 0;
+            font-size: 1.15rem;
+        }
+
+        .form-grid {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 16px;
+        }
+
+        .form-field {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .form-field.full {
+            grid-column: 1 / -1;
+        }
+
+        .form-field label {
+            font-weight: 600;
+        }
+
+        .helper-text,
+        .error-text {
+            font-size: 0.85rem;
+        }
+
+        .helper-text {
+            color: var(--muted);
+        }
+
+        .error-text {
+            color: var(--danger);
+            min-height: 1.2em;
+        }
+
+        .modal-actions,
+        .confirm-actions {
+            display: flex;
+            justify-content: flex-end;
+            gap: 12px;
+            margin-top: 22px;
+        }
+
+        .toast-stack {
+            position: fixed;
+            right: 24px;
+            bottom: 24px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            z-index: var(--z-toast);
+        }
+
+        .toast {
+            min-width: 280px;
+            max-width: 360px;
+            padding: 14px 16px;
+            border-radius: 16px;
+            color: #fff;
+            box-shadow: 0 12px 34px rgba(29, 26, 22, 0.18);
+            animation: slideUp 0.24s ease;
+        }
+
+        .toast.success {
+            background: linear-gradient(135deg, #0f766e, #0b5a54);
+        }
+
+        .toast.error {
+            background: linear-gradient(135deg, #b42318, #912018);
+        }
+
+        .toast.info {
+            background: linear-gradient(135deg, #475569, #334155);
+        }
+
+        .loading-dot {
+            display: inline-flex;
+            gap: 6px;
+            align-items: center;
+        }
+
+        .loading-dot::before,
+        .loading-dot::after,
+        .loading-dot span::before {
+            content: "";
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: rgba(178, 85, 43, 0.8);
+            animation: pulse 1.1s infinite ease-in-out;
+        }
+
+        .loading-dot::after {
+            animation-delay: 0.15s;
+        }
+
+        .loading-dot span::before {
+            display: inline-block;
+            animation-delay: 0.3s;
+        }
+
+        @keyframes pulse {
+            0%, 80%, 100% { transform: scale(0.75); opacity: 0.35; }
+            40% { transform: scale(1); opacity: 1; }
+        }
+
+        @keyframes slideUp {
+            from { opacity: 0; transform: translateY(12px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        @media (max-width: 1200px) {
+            .config-grid,
+            .summary-grid {
+                grid-template-columns: repeat(2, minmax(0, 1fr));
+            }
+        }
+
+        @media (max-width: 900px) {
+            .app-shell {
+                padding: 14px;
+            }
+
+            .layout,
+            .hero-grid,
+            .form-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .sidebar {
+                position: static;
+            }
+
+            .config-list {
+                max-height: none;
+                display: grid;
+                grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+            }
+        }
+
+        @media (max-width: 640px) {
+            .topbar,
+            .sidebar-header,
+            .section-head,
+            .card-body,
+            .hero-card {
+                padding-left: 16px;
+                padding-right: 16px;
+            }
+
+            .topbar,
+            .sidebar-header,
+            .section-head,
+            .modal-actions,
+            .confirm-actions,
+            .topbar-actions {
+                flex-direction: column;
+                align-items: stretch;
+            }
+
+            .config-grid,
+            .summary-grid,
+            .hero-stats {
+                grid-template-columns: 1fr;
+            }
+
+            .toast-stack {
+                left: 14px;
+                right: 14px;
+                bottom: 14px;
+            }
+
+            .toast {
+                min-width: auto;
+                max-width: none;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="app-shell">
+        <header class="topbar">
+            <div class="title-wrap">
+                <h1>阶梯满减优惠券管理系统</h1>
+                <p>围绕统一定价公式管理多套配置，校验任意档位不亏损，并生成利润、利润率、实付与优惠金额的 2×2 分析图。</p>
+            </div>
+            <div class="topbar-actions">
+                <button class="ghost-btn" id="refreshBtn" type="button">刷新数据</button>
+                <button class="primary-btn" id="createConfigBtn" type="button">新建配置</button>
+            </div>
+        </header>
+
+        <div class="layout">
+            <aside class="sidebar">
+                <div class="sidebar-header">
+                    <h2>配置列表</h2>
+                    <button class="ghost-btn" id="sidebarCreateBtn" type="button">新建</button>
+                </div>
+                <div class="sidebar-body">
+                    <div class="config-list" id="configList"></div>
+                </div>
+            </aside>
+
+            <main class="main">
+                <section class="card hero-card">
+                    <div class="hero-grid">
+                        <div class="hero-copy">
+                            <h2 id="heroTitle">选择一套配置开始管理</h2>
+                            <p id="heroDescription">你可以创建多套定价策略，逐条管理阶梯满减券，并在保存后生成图表检查利润区间与折后表现。</p>
+                            <div class="formula-chip" id="formulaPreview">标价 = 成本 × x + y</div>
+                        </div>
+                        <div class="hero-stats" id="heroStats"></div>
+                    </div>
+                </section>
+
+                <section class="card">
+                    <div class="section-head">
+                        <h2>定价参数配置</h2>
+                        <button class="ghost-btn" id="editConfigBtn" type="button">编辑配置</button>
+                    </div>
+                    <div class="card-body">
+                        <div id="configDetail"></div>
+                    </div>
+                </section>
+
+                <section class="card">
+                    <div class="section-head">
+                        <h2>优惠券管理</h2>
+                        <button class="ghost-btn" id="addCouponFocusBtn" type="button">定位到新增行</button>
+                    </div>
+                    <div class="card-body">
+                        <div class="table-wrap" id="couponTableWrap"></div>
+                    </div>
+                </section>
+
+                <section class="card">
+                    <div class="section-head">
+                        <h2>图表分析</h2>
+                        <button class="primary-btn" id="generateChartBtn" type="button">生成图表</button>
+                    </div>
+                    <div class="card-body">
+                        <div class="chart-panel" id="chartPanel"></div>
+                        <div class="summary-grid" id="chartSummary"></div>
+                    </div>
+                </section>
+            </main>
+        </div>
+    </div>
+
+    <div class="modal" id="configModal" aria-hidden="true">
+        <div class="modal-card">
+            <div class="modal-head">
+                <h3 id="configModalTitle">新建配置</h3>
+                <button class="icon-btn" id="closeConfigModalBtn" type="button" aria-label="关闭">×</button>
+            </div>
+            <form id="configForm">
+                <div class="form-grid">
+                    <div class="form-field full">
+                        <label for="configName">配置名称</label>
+                        <input id="configName" name="name" type="text" maxlength="50" placeholder="例如：春季主推款">
+                        <div class="error-text" data-error-for="name"></div>
+                    </div>
+                    <div class="form-field">
+                        <label for="configX">成本倍数 x</label>
+                        <input id="configX" name="x" type="number" step="0.01" min="1.01" placeholder="2">
+                        <div class="error-text" data-error-for="x"></div>
+                    </div>
+                    <div class="form-field">
+                        <label for="configY">固定加价 y</label>
+                        <input id="configY" name="y" type="number" step="0.01" min="0" placeholder="34">
+                        <div class="error-text" data-error-for="y"></div>
+                    </div>
+                    <div class="form-field">
+                        <label for="configM">成本下限 m</label>
+                        <input id="configM" name="m" type="number" step="1" min="1" placeholder="15">
+                        <div class="error-text" data-error-for="m"></div>
+                    </div>
+                    <div class="form-field">
+                        <label for="configN">成本上限 n</label>
+                        <input id="configN" name="n" type="number" step="1" min="1" placeholder="100">
+                        <div class="error-text" data-error-for="n"></div>
+                    </div>
+                    <div class="form-field full">
+                        <div class="helper-text" id="modalFormulaPreview">标价 = 成本 × x + y</div>
+                    </div>
+                </div>
+                <div class="modal-actions">
+                    <button class="ghost-btn" id="cancelConfigBtn" type="button">取消</button>
+                    <button class="primary-btn" id="submitConfigBtn" type="submit">保存配置</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div class="confirm" id="confirmModal" aria-hidden="true">
+        <div class="confirm-card">
+            <div class="confirm-head">
+                <h3>确认操作</h3>
+            </div>
+            <p id="confirmText" class="helper-text" style="margin: 0;"></p>
+            <div class="confirm-actions">
+                <button class="ghost-btn" id="confirmCancelBtn" type="button">取消</button>
+                <button class="danger-btn" id="confirmOkBtn" type="button">确认</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="toast-stack" id="toastStack" aria-live="polite"></div>
+
+    <script>
+        const state = {
+            configs: [],
+            selectedConfigId: null,
+            detail: null,
+            chartBase64: "",
+            chartSummary: null,
+            couponErrorMessage: "",
+            loading: {
+                list: false,
+                detail: false,
+                chart: false,
+                saveConfig: false
+            },
+            modalMode: "create",
+            confirmResolver: null
+        };
+
+        const refs = {
+            configList: document.getElementById("configList"),
+            heroTitle: document.getElementById("heroTitle"),
+            heroDescription: document.getElementById("heroDescription"),
+            heroStats: document.getElementById("heroStats"),
+            formulaPreview: document.getElementById("formulaPreview"),
+            configDetail: document.getElementById("configDetail"),
+            couponTableWrap: document.getElementById("couponTableWrap"),
+            chartPanel: document.getElementById("chartPanel"),
+            chartSummary: document.getElementById("chartSummary"),
+            configModal: document.getElementById("configModal"),
+            configModalTitle: document.getElementById("configModalTitle"),
+            configForm: document.getElementById("configForm"),
+            modalFormulaPreview: document.getElementById("modalFormulaPreview"),
+            toastStack: document.getElementById("toastStack"),
+            confirmModal: document.getElementById("confirmModal"),
+            confirmText: document.getElementById("confirmText"),
+            confirmOkBtn: document.getElementById("confirmOkBtn"),
+            submitConfigBtn: document.getElementById("submitConfigBtn")
+        };
+
+        function getFormField(name) {
+            return refs.configForm.elements.namedItem(name);
+        }
+
+        function escapeHtml(value) {
+            return String(value ?? "")
+                .replaceAll("&", "&amp;")
+                .replaceAll("<", "&lt;")
+                .replaceAll(">", "&gt;")
+                .replaceAll('"', "&quot;")
+                .replaceAll("'", "&#39;");
+        }
+
+        async function api(url, options = {}) {
+            const response = await fetch(url, {
+                headers: {
+                    "Content-Type": "application/json",
+                    ...(options.headers || {})
+                },
+                ...options
+            });
+
+            const payload = await response.json().catch(() => ({}));
+            if (!response.ok || payload.success === false) {
+                const message = payload?.error?.message || "请求失败。";
+                const err = new Error(message);
+                err.code = payload?.error?.code || "REQUEST_ERROR";
+                err.details = payload?.error?.details || null;
+                throw err;
+            }
+            return payload;
+        }
+
+        function showToast(type, message) {
+            const toast = document.createElement("div");
+            toast.className = `toast ${type}`;
+            toast.textContent = message;
+            refs.toastStack.appendChild(toast);
+            window.setTimeout(() => {
+                toast.remove();
+            }, 3000);
+        }
+
+        function formatErrorDetails(details) {
+            if (!details) {
+                return "";
+            }
+            const uniqueMessages = [...new Set(Object.values(details).filter(Boolean))];
+            return uniqueMessages.join("；");
+        }
+
+        function getReadableError(err) {
+            return formatErrorDetails(err?.details) || err?.message || "请求失败。";
+        }
+
+        function formatFormula(config) {
+            if (!config) {
+                return "标价 = 成本 × x + y";
+            }
+            return `标价 = 成本 × ${config.x} + ${config.y}`;
+        }
+
+        function setLoading(key, value) {
+            state.loading[key] = value;
+            render();
+        }
+
+        function openConfigModal(mode) {
+            state.modalMode = mode;
+            refs.configModalTitle.textContent = mode === "create" ? "新建配置" : "编辑配置";
+            clearFormErrors();
+            if (mode === "edit" && state.detail) {
+                getFormField("name").value = state.detail.name;
+                getFormField("x").value = state.detail.x;
+                getFormField("y").value = state.detail.y;
+                getFormField("m").value = state.detail.m;
+                getFormField("n").value = state.detail.n;
+            } else {
+                refs.configForm.reset();
+                getFormField("name").value = "";
+                getFormField("x").value = 2;
+                getFormField("y").value = 34;
+                getFormField("m").value = 15;
+                getFormField("n").value = 100;
+            }
+            updateModalFormulaPreview();
+            refs.configModal.classList.add("open");
+            refs.configModal.setAttribute("aria-hidden", "false");
+        }
+
+        function closeConfigModal() {
+            refs.configModal.classList.remove("open");
+            refs.configModal.setAttribute("aria-hidden", "true");
+        }
+
+        function clearFormErrors() {
+            document.querySelectorAll("[data-error-for]").forEach((node) => {
+                node.textContent = "";
+            });
+        }
+
+        function renderFormErrors(details = {}) {
+            clearFormErrors();
+            Object.entries(details).forEach(([key, message]) => {
+                const node = document.querySelector(`[data-error-for="${key}"]`);
+                if (node) {
+                    node.textContent = message;
+                }
+            });
+        }
+
+        function updateModalFormulaPreview() {
+            const x = getFormField("x").value || "x";
+            const y = getFormField("y").value || "y";
+            refs.modalFormulaPreview.textContent = `标价 = 成本 × ${x} + ${y}`;
+        }
+
+        async function askConfirm(message) {
+            refs.confirmText.textContent = message;
+            refs.confirmModal.classList.add("open");
+            refs.confirmModal.setAttribute("aria-hidden", "false");
+            return new Promise((resolve) => {
+                state.confirmResolver = resolve;
+            });
+        }
+
+        function closeConfirm(result) {
+            refs.confirmModal.classList.remove("open");
+            refs.confirmModal.setAttribute("aria-hidden", "true");
+            if (state.confirmResolver) {
+                state.confirmResolver(result);
+                state.confirmResolver = null;
+            }
+        }
+
+        function configExists(id) {
+            return state.configs.some((item) => item.id === id);
+        }
+
+        async function loadConfigs(preferredId = null) {
+            setLoading("list", true);
+            try {
+                const payload = await api("/api/configs");
+                state.configs = payload.data;
+                if (!state.configs.length) {
+                    state.selectedConfigId = null;
+                    state.detail = null;
+                    state.chartBase64 = "";
+                    state.chartSummary = null;
+                    return;
+                }
+
+                let nextId = preferredId ?? state.selectedConfigId ?? state.configs[0].id;
+                if (!configExists(nextId)) {
+                    nextId = state.configs[0].id;
+                }
+                await loadConfigDetail(nextId, false);
+            } catch (err) {
+                showToast("error", err.message);
+            } finally {
+                setLoading("list", false);
+            }
+        }
+
+        async function loadConfigDetail(configId, resetChart = true) {
+            setLoading("detail", true);
+            try {
+                const payload = await api(`/api/configs/${configId}`);
+                state.detail = payload.data;
+                state.selectedConfigId = payload.data.id;
+                state.couponErrorMessage = "";
+                if (resetChart) {
+                    state.chartBase64 = "";
+                    state.chartSummary = null;
+                }
+            } catch (err) {
+                showToast("error", err.message);
+            } finally {
+                setLoading("detail", false);
+            }
+        }
+
+        async function handleConfigSubmit(event) {
+            event.preventDefault();
+            clearFormErrors();
+            refs.submitConfigBtn.disabled = true;
+
+            const body = {
+                name: getFormField("name").value.trim(),
+                x: Number(getFormField("x").value),
+                y: Number(getFormField("y").value),
+                m: Number(getFormField("m").value),
+                n: Number(getFormField("n").value),
+                coupons: state.modalMode === "edit" && state.detail ? state.detail.coupons : []
+            };
+
+            try {
+                const payload = await api(
+                    state.modalMode === "create" ? "/api/configs" : `/api/configs/${state.detail.id}`,
+                    {
+                        method: state.modalMode === "create" ? "POST" : "PUT",
+                        body: JSON.stringify(body)
+                    }
+                );
+                const configId = payload.data.id;
+                closeConfigModal();
+                await loadConfigs(configId);
+                showToast("success", state.modalMode === "create" ? "配置已创建。" : "配置已更新。");
+            } catch (err) {
+                if (err.details) {
+                    renderFormErrors(err.details);
+                }
+                showToast("error", getReadableError(err));
+            } finally {
+                refs.submitConfigBtn.disabled = false;
+            }
+        }
+
+        async function removeConfig(configId, name) {
+            const confirmed = await askConfirm(`确认删除配置“${name}”吗？该配置下的优惠券会一并删除。`);
+            if (!confirmed) {
+                return;
+            }
+            try {
+                await api(`/api/configs/${configId}`, { method: "DELETE" });
+                await loadConfigs();
+                showToast("success", "配置已删除。");
+            } catch (err) {
+                showToast("error", err.message);
+            }
+        }
+
+        function buildCouponTable() {
+            if (!state.detail) {
+                refs.couponTableWrap.innerHTML = `
+                    <div class="empty-state">
+                        <p>先创建或选中一套配置，再添加阶梯满减券。</p>
+                    </div>
+                `;
+                return;
+            }
+
+            const rows = state.detail.coupons.map((coupon) => `
+                <tr data-coupon-id="${coupon.id}">
+                    <td><input class="inline-input" data-field="tier" type="number" step="1" min="1" value="${coupon.tier}"></td>
+                    <td><input class="inline-input" data-field="p" type="number" step="0.01" min="0" value="${coupon.p}"></td>
+                    <td><input class="inline-input" data-field="q" type="number" step="0.01" min="0" value="${coupon.q}"></td>
+                    <td>${escapeHtml(formatFormula(state.detail))}</td>
+                    <td>
+                        <div class="row-actions">
+                            <button class="ghost-btn" type="button" data-action="save-coupon" data-id="${coupon.id}">保存</button>
+                            <button class="danger-btn" type="button" data-action="delete-coupon" data-id="${coupon.id}" data-name="第${coupon.tier}档">删除</button>
+                        </div>
+                    </td>
+                </tr>
+            `).join("");
+
+            const nextTier = (state.detail.coupons.at(-1)?.tier || 0) + 1;
+            refs.couponTableWrap.innerHTML = `
+                <table>
+                    <thead>
+                        <tr>
+                            <th>档位</th>
+                            <th>满 P</th>
+                            <th>减 Q</th>
+                            <th>当前公式</th>
+                            <th>操作</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${rows}
+                        <tr id="newCouponRow">
+                            <td><input class="inline-input" id="newCouponTier" type="number" step="1" min="1" value="${nextTier}"></td>
+                            <td><input class="inline-input" id="newCouponP" type="number" step="0.01" min="0" placeholder="例如 59"></td>
+                            <td><input class="inline-input" id="newCouponQ" type="number" step="0.01" min="0" placeholder="例如 5"></td>
+                            <td>${escapeHtml(formatFormula(state.detail))}</td>
+                            <td>
+                                <button class="primary-btn" type="button" data-action="add-coupon">添加优惠券</button>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+                ${state.couponErrorMessage ? `<div class="coupon-feedback">${escapeHtml(state.couponErrorMessage)}</div>` : ""}
+            `;
+        }
+
+        async function addCoupon() {
+            if (!state.detail) {
+                showToast("info", "请先创建配置。");
+                return;
+            }
+            const tier = Number(document.getElementById("newCouponTier").value);
+            const p = Number(document.getElementById("newCouponP").value);
+            const q = Number(document.getElementById("newCouponQ").value);
+            try {
+                await api(`/api/configs/${state.detail.id}/coupons`, {
+                    method: "POST",
+                    body: JSON.stringify({ tier, p, q })
+                });
+                state.couponErrorMessage = "";
+                await loadConfigs(state.detail.id);
+                showToast("success", "优惠券已添加。");
+            } catch (err) {
+                state.couponErrorMessage = getReadableError(err);
+                showToast("error", state.couponErrorMessage);
+            }
+        }
+
+        async function saveCoupon(couponId) {
+            const row = document.querySelector(`tr[data-coupon-id="${couponId}"]`);
+            if (!row) {
+                return;
+            }
+            const body = {
+                tier: Number(row.querySelector('[data-field="tier"]').value),
+                p: Number(row.querySelector('[data-field="p"]').value),
+                q: Number(row.querySelector('[data-field="q"]').value)
+            };
+
+            try {
+                await api(`/api/coupons/${couponId}`, {
+                    method: "PUT",
+                    body: JSON.stringify(body)
+                });
+                state.couponErrorMessage = "";
+                await loadConfigs(state.detail.id);
+                showToast("success", "优惠券已更新。");
+            } catch (err) {
+                state.couponErrorMessage = getReadableError(err);
+                showToast("error", state.couponErrorMessage);
+            }
+        }
+
+        async function deleteCoupon(couponId, label) {
+            const confirmed = await askConfirm(`确认删除${label}吗？`);
+            if (!confirmed) {
+                return;
+            }
+            try {
+                await api(`/api/coupons/${couponId}`, { method: "DELETE" });
+                await loadConfigs(state.detail.id);
+                showToast("success", "优惠券已删除。");
+            } catch (err) {
+                showToast("error", err.message);
+            }
+        }
+
+        async function generateChart() {
+            if (!state.detail) {
+                showToast("info", "请先选择配置。");
+                return;
+            }
+            setLoading("chart", true);
+            try {
+                const payload = await api(`/api/configs/${state.detail.id}/chart`);
+                state.chartBase64 = payload.data.image_base64;
+                state.chartSummary = payload.data.summary;
+                showToast("success", "图表已生成。");
+            } catch (err) {
+                showToast("error", err.message);
+            } finally {
+                setLoading("chart", false);
+            }
+        }
+
+        function renderSidebar() {
+            if (state.loading.list && !state.configs.length) {
+                refs.configList.innerHTML = `
+                    <div class="empty-state">
+                        <div class="loading-dot"><span></span></div>
+                        <p>正在加载配置列表...</p>
+                    </div>
+                `;
+                return;
+            }
+
+            if (!state.configs.length) {
+                refs.configList.innerHTML = `
+                    <div class="empty-state">
+                        <p>还没有任何配置。先创建一套定价方案，再逐条补优惠券。</p>
+                    </div>
+                `;
+                return;
+            }
+
+            refs.configList.innerHTML = state.configs.map((config) => `
+                <div class="config-item ${config.id === state.selectedConfigId ? "active" : ""}">
+                    <button class="config-main" type="button" data-action="select-config" data-id="${config.id}">
+                        <strong>${escapeHtml(config.name)}</strong>
+                        <span>${escapeHtml(formatFormula(config))}</span>
+                        <span>成本区间 ${config.m}~${config.n} 元 · ${config.coupon_count} 张券</span>
+                    </button>
+                    <button class="icon-btn" type="button" data-action="delete-config" data-id="${config.id}" data-name="${escapeHtml(config.name)}" aria-label="删除配置">×</button>
+                </div>
+            `).join("");
+        }
+
+        function renderHero() {
+            if (!state.detail) {
+                refs.heroTitle.textContent = "选择一套配置开始管理";
+                refs.heroDescription.textContent = "你可以创建多套定价策略，逐条管理阶梯满减券，并在保存后生成图表检查利润区间与折后表现。";
+                refs.formulaPreview.textContent = "标价 = 成本 × x + y";
+                refs.heroStats.innerHTML = `
+                    <div class="stat-card"><span>配置状态</span><strong>尚未选中</strong></div>
+                    <div class="stat-card"><span>优惠券数量</span><strong>0</strong></div>
+                    <div class="stat-card"><span>成本范围</span><strong>--</strong></div>
+                    <div class="stat-card"><span>图表状态</span><strong>待生成</strong></div>
+                `;
+                return;
+            }
+
+            refs.heroTitle.textContent = state.detail.name;
+            refs.heroDescription.textContent = "在当前配置里可以调整定价参数、逐条维护满减券，并通过生成图表核对利润率与优惠梯度是否仍然均衡。";
+            refs.formulaPreview.textContent = formatFormula(state.detail);
+            refs.heroStats.innerHTML = `
+                <div class="stat-card"><span>优惠券数量</span><strong>${state.detail.coupons.length}</strong></div>
+                <div class="stat-card"><span>成本区间</span><strong>${state.detail.m}~${state.detail.n} 元</strong></div>
+                <div class="stat-card"><span>固定加价</span><strong>${state.detail.y} 元</strong></div>
+                <div class="stat-card"><span>图表状态</span><strong>${state.chartBase64 ? "已生成" : "待生成"}</strong></div>
+            `;
+        }
+
+        function renderConfigDetail() {
+            if (!state.detail) {
+                refs.configDetail.innerHTML = `
+                    <div class="empty-state">
+                        <p>这里会展示当前配置的定价参数和公式预览。</p>
+                    </div>
+                `;
+                return;
+            }
+
+            refs.configDetail.innerHTML = `
+                <div class="config-grid">
+                    <div class="config-field"><span>配置名称</span><strong>${escapeHtml(state.detail.name)}</strong></div>
+                    <div class="config-field"><span>成本倍数 x</span><strong>${state.detail.x}</strong></div>
+                    <div class="config-field"><span>固定加价 y</span><strong>${state.detail.y}</strong></div>
+                    <div class="config-field"><span>成本区间</span><strong>${state.detail.m} ~ ${state.detail.n}</strong></div>
+                    <div class="config-field"><span>公式预览</span><strong>${escapeHtml(formatFormula(state.detail))}</strong></div>
+                </div>
+            `;
+        }
+
+        function renderChart() {
+            if (state.loading.chart) {
+                refs.chartPanel.innerHTML = `
+                    <div class="chart-placeholder">
+                        <div class="loading-dot"><span></span></div>
+                        <p>正在生成 2×2 图表，请稍候...</p>
+                    </div>
+                `;
+                refs.chartSummary.innerHTML = "";
+                return;
+            }
+
+            if (!state.chartBase64) {
+                refs.chartPanel.innerHTML = `
+                    <div class="chart-placeholder">
+                        <p>点击“生成图表”后，这里会显示利润、利润率、实际支付与优惠金额的 2×2 分析图。</p>
+                    </div>
+                `;
+                refs.chartSummary.innerHTML = "";
+                return;
+            }
+
+            refs.chartPanel.innerHTML = `<img src="data:image/png;base64,${state.chartBase64}" alt="配置分析图表">`;
+            if (!state.chartSummary) {
+                refs.chartSummary.innerHTML = "";
+                return;
+            }
+
+            refs.chartSummary.innerHTML = `
+                <div class="summary-item"><span>最低利润</span><strong>${state.chartSummary.min_profit.toFixed(2)} 元</strong></div>
+                <div class="summary-item"><span>最高利润</span><strong>${state.chartSummary.max_profit.toFixed(2)} 元</strong></div>
+                <div class="summary-item"><span>最低利润率</span><strong>${state.chartSummary.min_profit_rate.toFixed(2)}%</strong></div>
+                <div class="summary-item"><span>最高利润率</span><strong>${state.chartSummary.max_profit_rate.toFixed(2)}%</strong></div>
+            `;
+        }
+
+        function render() {
+            renderSidebar();
+            renderHero();
+            renderConfigDetail();
+            buildCouponTable();
+            renderChart();
+
+            document.getElementById("editConfigBtn").disabled = !state.detail;
+            document.getElementById("generateChartBtn").disabled = !state.detail || state.loading.chart;
+            document.getElementById("addCouponFocusBtn").disabled = !state.detail;
+        }
+
+        document.body.addEventListener("click", async (event) => {
+            const actionNode = event.target.closest("[data-action]");
+            if (actionNode) {
+                const { action, id, name } = actionNode.dataset;
+                if (action === "select-config") {
+                    await loadConfigDetail(Number(id));
+                    render();
+                    return;
+                }
+                if (action === "delete-config") {
+                    await removeConfig(Number(id), name);
+                    render();
+                    return;
+                }
+                if (action === "save-coupon") {
+                    await saveCoupon(Number(id));
+                    render();
+                    return;
+                }
+                if (action === "delete-coupon") {
+                    await deleteCoupon(Number(id), name);
+                    render();
+                    return;
+                }
+                if (action === "add-coupon") {
+                    await addCoupon();
+                    render();
+                    return;
+                }
+            }
+
+            if (event.target.id === "createConfigBtn" || event.target.id === "sidebarCreateBtn") {
+                openConfigModal("create");
+            }
+
+            if (event.target.id === "editConfigBtn") {
+                if (!state.detail) {
+                    showToast("info", "请先选择配置。");
+                    return;
+                }
+                openConfigModal("edit");
+            }
+
+            if (event.target.id === "refreshBtn") {
+                await loadConfigs();
+                render();
+            }
+
+            if (event.target.id === "generateChartBtn") {
+                await generateChart();
+                render();
+            }
+
+            if (event.target.id === "closeConfigModalBtn" || event.target.id === "cancelConfigBtn") {
+                closeConfigModal();
+            }
+
+            if (event.target.id === "addCouponFocusBtn") {
+                const row = document.getElementById("newCouponRow");
+                if (row) {
+                    row.scrollIntoView({ behavior: "smooth", block: "center" });
+                }
+            }
+        });
+
+        refs.configForm.addEventListener("submit", handleConfigSubmit);
+        refs.configForm.addEventListener("input", updateModalFormulaPreview);
+        document.getElementById("confirmCancelBtn").addEventListener("click", () => closeConfirm(false));
+        refs.confirmOkBtn.addEventListener("click", () => closeConfirm(true));
+
+        window.addEventListener("keydown", (event) => {
+            if (event.key === "Escape") {
+                closeConfigModal();
+                closeConfirm(false);
+            }
+        });
+
+        loadConfigs().then(render);
+    </script>
+</body>
+</html>
